@@ -26,6 +26,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
 public class MainCommand implements CommandExecutor {
 
@@ -94,7 +95,7 @@ public class MainCommand implements CommandExecutor {
 
 
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         FileConfiguration config = plugin.getConfig();
 
 
@@ -120,9 +121,6 @@ public class MainCommand implements CommandExecutor {
             feelSymptoms.start();
             plugin.cancelRandomSneezes();
             plugin.arrancarRandomSneezes();
-            plugin.clearRecipes();
-            plugin.registerMaskRecipe();
-            plugin.registerPotionRecipe();
             loadMessages();
             send(sender, "&aFiles reloaded");
 

@@ -5,42 +5,34 @@ import com.github.alfonsoleandro.corona.commands.MainCommandTabCompleter;
 import com.github.alfonsoleandro.corona.events.*;
 import com.github.alfonsoleandro.corona.functions.FeelSymptoms;
 import com.github.alfonsoleandro.corona.functions.RandomSneezes;
+import com.github.alfonsoleandro.corona.managers.InfectionManager;
+import com.github.alfonsoleandro.corona.managers.RecipesManager;
+import com.github.alfonsoleandro.corona.managers.Settings;
 import com.github.alfonsoleandro.corona.utils.Message;
 import com.github.alfonsoleandro.corona.utils.PAPI;
 import com.github.alfonsoleandro.mputils.files.YamlFile;
 import com.github.alfonsoleandro.mputils.managers.MessageSender;
 import com.github.alfonsoleandro.mputils.reloadable.ReloaderPlugin;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import net.milkbowl.vault.economy.Economy;
-import org.bukkit.*;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
 
 public final class Corona extends ReloaderPlugin {
 
     private final String version = getDescription().getVersion();
     private MessageSender<Message> messageSender;
+    private Settings settings;
+    private InfectionManager infectionManager;
+    private RecipesManager recipesManager;
     private Economy economy;
     private String latestVersion;
     private PAPI papiExpansion;
@@ -57,6 +49,9 @@ public final class Corona extends ReloaderPlugin {
         this.messageSender.send("&fThank you for using my plugin! &c" + getDescription().getName() + "&f By " + getDescription().getAuthors().get(0));
         this.messageSender.send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
         this.messageSender.send("Please consider subscribing to my yt channel: &c" + getDescription().getWebsite());
+        this.settings = new Settings(this);
+        this.infectionManager = new InfectionManager(this);
+        this.recipesManager = new RecipesManager(this);
         if(setupEconomy()){
             this.messageSender.send("&aPlugin VAULT found");
         }else {
@@ -65,8 +60,6 @@ public final class Corona extends ReloaderPlugin {
         arrancarFeelSymptoms();
         registerEvents();
         registerCommands();
-        registerMaskRecipe();
-        registerPotionRecipe();
         firstRun();
         arrancarRandomSneezes();
         registerPAPIExpansion();
@@ -79,8 +72,9 @@ public final class Corona extends ReloaderPlugin {
         this.messageSender.send("&fThank you for using my plugin! &c" + getDescription().getName() + "&f By " + getDescription().getAuthors().get(0));
         this.messageSender.send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
         this.messageSender.send("Please consider subscribing to my yt channel: &c" + getDescription().getWebsite());
-        clearRecipes();
         unRegisterPAPIExpansion();
+        this.infectionManager.saveInfectedPlayersToFile();
+        this.recipesManager.unregisterRecipes();
     }
 
 
@@ -250,105 +244,20 @@ public final class Corona extends ReloaderPlugin {
         super.reload(deep);
     }
 
-
-
-
-    //
-    //REGISTER CURE POTION
-    //
-
-    public void registerPotionRecipe() {
-
-        if(getConfig().getBoolean("config.cure potion.enabled") && getConfig().getBoolean("config.cure potion.recipe.enabled")) {
-
-            String path = "config.cure potion";
-            ItemStack potion = new ItemStack(Material.POTION);
-            ItemMeta meta = potion.getItemMeta();
-            assert meta != null;
-            ((PotionMeta)meta).addCustomEffect(new PotionEffect(PotionEffectType.ABSORPTION, 1200, 4), true);
-            ((PotionMeta)meta).addCustomEffect(new PotionEffect(PotionEffectType.WEAKNESS, 1200, 4), true);
-
-            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', getConfig().getString(path+".name")));
-            List<String> lore = new ArrayList<>();
-            for (String linea : getConfig().getStringList(path+".lore")) {
-                lore.add(ChatColor.translateAlternateColorCodes('&', linea));
-            }
-            meta.setLore(lore);
-            potion.setItemMeta(meta);
-
-            NamespacedKey key = new NamespacedKey(this, "Potion");
-            ShapedRecipe autof1 = new ShapedRecipe(key, potion);
-            autof1.shape("ABC","DEF","GHI");
-            autof1.setIngredient('A', Material.valueOf(getConfig().getString(path+".recipe.A")));
-            autof1.setIngredient('B', Material.valueOf(getConfig().getString(path+".recipe.B")));
-            autof1.setIngredient('C', Material.valueOf(getConfig().getString(path+".recipe.C")));
-            autof1.setIngredient('D', Material.valueOf(getConfig().getString(path+".recipe.D")));
-            autof1.setIngredient('E', Material.valueOf(getConfig().getString(path+".recipe.E")));
-            autof1.setIngredient('F', Material.valueOf(getConfig().getString(path+".recipe.F")));
-            autof1.setIngredient('G', Material.valueOf(getConfig().getString(path+".recipe.G")));
-            autof1.setIngredient('H', Material.valueOf(getConfig().getString(path+".recipe.H")));
-            autof1.setIngredient('I', Material.valueOf(getConfig().getString(path+".recipe.I")));
-
-            Bukkit.addRecipe(autof1);
-        }
-    }
-
-
-
-    //
-    //REGISTRAR MASK
-    //
-
-    public void registerMaskRecipe() {
-
-        if(getConfig().getBoolean("config.mask.enabled") && getConfig().getBoolean("config.mask.recipe.enabled")) {
-
-            String path = "config.mask";
-            String playerSkullTextureURL = getConfig().getString(path+".texture URL");
-            ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-            SkullMeta skull = (SkullMeta) head.getItemMeta();
-
-            GameProfile profile = new GameProfile(UUID.randomUUID(), null);
-            byte[] encodedData = Base64.getEncoder().encode(String.format("{textures:{SKIN:{url:\"%s\"}}}", playerSkullTextureURL).getBytes());
-            profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
-            Field profileField;
-            try {
-                assert skull != null;
-                profileField = skull.getClass().getDeclaredField("profile");
-                profileField.setAccessible(true);
-                profileField.set(skull, profile);
-            } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {
-                e1.printStackTrace();
-            }
-
-            skull.setDisplayName(ChatColor.translateAlternateColorCodes('&', getConfig().getString(path+".name")));
-            List<String> lore = new ArrayList<>();
-            for (String linea : getConfig().getStringList(path+".lore")) {
-                lore.add(ChatColor.translateAlternateColorCodes('&', linea));
-            }
-            skull.setLore(lore);
-            head.setItemMeta(skull);
-            head.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 10);
-
-            NamespacedKey key = new NamespacedKey(this, "Mask");
-            ShapedRecipe maskRecipe = new ShapedRecipe(key, head);
-            maskRecipe.shape("ABC","DEF","GHI");
-            maskRecipe.setIngredient('A', Material.valueOf(getConfig().getString(path+".recipe.A")));
-            maskRecipe.setIngredient('B', Material.valueOf(getConfig().getString(path+".recipe.B")));
-            maskRecipe.setIngredient('C', Material.valueOf(getConfig().getString(path+".recipe.C")));
-            maskRecipe.setIngredient('D', Material.valueOf(getConfig().getString(path+".recipe.D")));
-            maskRecipe.setIngredient('E', Material.valueOf(getConfig().getString(path+".recipe.E")));
-            maskRecipe.setIngredient('F', Material.valueOf(getConfig().getString(path+".recipe.F")));
-            maskRecipe.setIngredient('G', Material.valueOf(getConfig().getString(path+".recipe.G")));
-            maskRecipe.setIngredient('H', Material.valueOf(getConfig().getString(path+".recipe.H")));
-            maskRecipe.setIngredient('I', Material.valueOf(getConfig().getString(path+".recipe.I")));
-
-            Bukkit.addRecipe(maskRecipe);
-        }
-    }
-
     public MessageSender<Message> getMessageSender() {
         return this.messageSender;
+    }
+
+    public Settings getSettings() {
+        return this.settings;
+    }
+
+    public InfectionManager getInfectionManager() {
+        return this.infectionManager;
+    }
+
+    public RecipesManager getRecipesManager() {
+        return this.recipesManager;
     }
 
     @Override
@@ -362,19 +271,6 @@ public final class Corona extends ReloaderPlugin {
 
     public YamlFile getPlayersYaml() {
         return this.playersYaml;
-    }
-
-    //limpiar recipes y checkear si esta registrada
-
-    public void clearRecipes() {
-        Iterator<Recipe> it = getServer().recipeIterator();
-        Recipe recipe;
-        while(it.hasNext()){
-            recipe = it.next();
-            if(((Keyed)recipe).getKey().getNamespace().contains("mpcorona")){
-                it.remove();
-            }
-        }
     }
 
 
