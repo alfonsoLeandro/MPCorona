@@ -42,7 +42,7 @@ public class FeelSymptoms {
         runnable = new BukkitRunnable(){
 
             public void run() {
-                List<String> infected = plugin.getPlayers().getStringList("players.infected");
+                List<String> infected = plugin.getPlayersYaml().getAccess().getStringList("players.infected");
 
                 if(!infected.isEmpty()) {
                     for(String name : infected) {

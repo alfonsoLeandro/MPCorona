@@ -67,7 +67,7 @@ public class PAPI extends PlaceholderExpansion {
             return "";
         }
 
-        FileConfiguration players = plugin.getPlayers();
+        FileConfiguration players = plugin.getPlayersYaml().getAccess();
         FileConfiguration config = plugin.getConfig();
 
 

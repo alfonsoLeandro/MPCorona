@@ -1,6 +1,7 @@
 name: MPCorona
 version: ${project.version}
 main: com.github.alfonsoleandro.corona.Corona
+depend: [MPUtils]
 softdepend: [Vault, PlaceholderAPI]
 api-version: '1.13'
 authors: [lelesape]

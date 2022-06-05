@@ -36,7 +36,7 @@ public class CureByPotion implements Listener {
 
     public void cure(Player toCure){
         FileConfiguration config = plugin.getConfig();
-        FileConfiguration players = plugin.getPlayers();
+        FileConfiguration players = plugin.getPlayersYaml().getAccess();
         String curedByPotion = config.getString("config.messages.cured by potion");
         String hasCured = config.getString("config.messages.someone cured by potion");
         List<String> infected = players.getStringList("players.infected");
@@ -45,7 +45,7 @@ public class CureByPotion implements Listener {
         infected.remove(toCure.getName());
         players.set("players.infected", infected);
         players.set("players.to infect."+toCure.getName(), 0);
-        plugin.savePlayers();
+        plugin.getPlayersYaml().save(true);
         symp.cancel();
         symp.start();
         send(toCure, curedByPotion);
@@ -58,7 +58,7 @@ public class CureByPotion implements Listener {
         if(item.getType().equals(Material.POTION) && item.isSimilar(getCuringPotion())){
             FileConfiguration config = plugin.getConfig();
             if(config.getBoolean("config.cure potion.enabled")){
-                if(plugin.getPlayers().getStringList("players.infected").contains(event.getPlayer().getName())) {
+                if(plugin.getPlayersYaml().getAccess().getStringList("players.infected").contains(event.getPlayer().getName())) {
                     cure(event.getPlayer());
                 }else{
                     event.setCancelled(true);

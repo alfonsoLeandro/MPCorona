@@ -115,8 +115,7 @@ public class MainCommand implements CommandExecutor {
                 send(sender, noPerm);
                 return true;
             }
-            plugin.reloadConfig();
-            plugin.reloadPlayers();
+            this.plugin.reload(false);
             feelSymptoms.cancel();
             feelSymptoms.start();
             plugin.cancelRandomSneezes();
@@ -150,7 +149,7 @@ public class MainCommand implements CommandExecutor {
 
 
         }else if(args[0].equalsIgnoreCase("infect")) {
-            FileConfiguration players = plugin.getPlayers();
+            FileConfiguration players = plugin.getPlayersYaml().getAccess();
             List<String> disabledWorlds = config.getStringList("config.disabled worlds");
 
             if(!config.getBoolean("config.infect command.enabled")) {
@@ -209,7 +208,7 @@ public class MainCommand implements CommandExecutor {
 
 
         }else if(args[0].equalsIgnoreCase("cure")) {
-            FileConfiguration players = plugin.getPlayers();
+            FileConfiguration players = plugin.getPlayersYaml().getAccess();
 
             if(!config.getBoolean("config.cure.enabled")){
                 send(sender, notCure);
@@ -331,7 +330,7 @@ public class MainCommand implements CommandExecutor {
                     send(sender, "&cThe console cannot get infected");
                     return true;
                 }
-                boolean infected = plugin.getPlayers().getStringList("players.infected").contains(sender.getName());
+                boolean infected = plugin.getPlayersYaml().getAccess().getStringList("players.infected").contains(sender.getName());
 
                 send(sender, this.checkSelf.replace("%infected%", infected ? checkInfected : checkHealthy));
 
@@ -345,7 +344,7 @@ public class MainCommand implements CommandExecutor {
                     return true;
                 }
 
-                boolean infected = plugin.getPlayers().getStringList("players.infected").contains(args[1]);
+                boolean infected = plugin.getPlayersYaml().getAccess().getStringList("players.infected").contains(args[1]);
 
                 send(sender, this.checkOthers.replace("%infected%", infected ? checkInfected : checkHealthy).replace("%player%", args[1]));
 
@@ -479,7 +478,7 @@ public class MainCommand implements CommandExecutor {
 
     public void infect(Player newinf, CommandSender infecter) {
         FileConfiguration config = plugin.getConfig();
-        FileConfiguration players = plugin.getPlayers();
+        FileConfiguration players = plugin.getPlayersYaml().getAccess();
         String nowInfected = config.getString("config.messages.now infected");
         String justInfected = config.getString("config.messages.just infected someone");
         int toInf;
@@ -497,14 +496,14 @@ public class MainCommand implements CommandExecutor {
             players.set("players.to infect."+infecter.getName(), toInf);
         }
         players.set("players.to infect."+newinf.getName(), 0);
-        plugin.savePlayers();
+        plugin.getPlayersYaml().save(true);
         bCast(justInfected.replace("%infecter%", infecter.getName()).replace("%infected%", newinf.getName()));
         send(newinf, nowInfected);
     }
 
     public void cure(Player toCure, CommandSender curer){
         FileConfiguration config = plugin.getConfig();
-        FileConfiguration players = plugin.getPlayers();
+        FileConfiguration players = plugin.getPlayersYaml().getAccess();
         String curedsmn = config.getString("config.messages.cured someone");
         String cured = config.getString("config.messages.cured you");
         String hascured = config.getString("config.messages.has cured");
@@ -514,7 +513,7 @@ public class MainCommand implements CommandExecutor {
         infected.remove(toCure.getName());
         players.set("players.infected", infected);
         players.set("players.to infect."+toCure.getName(), 0);
-        plugin.savePlayers();
+        plugin.getPlayersYaml().save(true);
         feelSymptoms.cancel();
         feelSymptoms.start();
         send(curer, curedsmn.replace("%cured%", toCure.getName()));

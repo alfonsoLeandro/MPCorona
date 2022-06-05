@@ -67,7 +67,7 @@ public class DamageEvent implements Listener {
 
     public void infect(Player player, String infected, String infecter) {
         FileConfiguration config = plugin.getConfig();
-        FileConfiguration players = plugin.getPlayers();
+        FileConfiguration players = plugin.getPlayersYaml().getAccess();
         String prefix = config.getString("config.prefix")+" ";
         String nowinfec = config.getString("config.messages.now infected");
         String justinfected = config.getString("config.messages.just infected someone");
@@ -77,7 +77,7 @@ public class DamageEvent implements Listener {
         infectedS.add(player.getName());
         players.set("players.infected", infectedS);
         players.set("players.to infect."+player.getName(), 0);
-        plugin.savePlayers();
+        plugin.getPlayersYaml().save(true);
         Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', prefix+justinfected.replace("%infecter%", infecter).replace("%infected%", infected)));
         player.sendMessage(ChatColor.translateAlternateColorCodes('&', prefix+nowinfec));
     }
@@ -90,7 +90,7 @@ public class DamageEvent implements Listener {
         if(event.getEntity() instanceof Player) {
             FileConfiguration config = plugin.getConfig();
             if(config.getStringList("config.mobs that can infect").contains(event.getDamager().getType().toString())) {
-                FileConfiguration players = plugin.getPlayers();
+                FileConfiguration players = plugin.getPlayersYaml().getAccess();
                 Player player = (Player) event.getEntity();
                 List<String> disabledWorlds = config.getStringList("config.disabled worlds");
 
@@ -126,7 +126,7 @@ public class DamageEvent implements Listener {
     public void onEat(PlayerItemConsumeEvent event) {
         FileConfiguration config = plugin.getConfig();
         if(config.getStringList("config.food that can infect").contains(event.getItem().getType().toString())) {
-            FileConfiguration players = plugin.getPlayers();
+            FileConfiguration players = plugin.getPlayersYaml().getAccess();
             Player player = event.getPlayer();
             List<String> disabledWorlds = config.getStringList("config.disabled worlds");
 

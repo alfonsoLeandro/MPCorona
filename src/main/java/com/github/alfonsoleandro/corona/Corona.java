@@ -5,7 +5,11 @@ import com.github.alfonsoleandro.corona.commands.MainCommandTabCompleter;
 import com.github.alfonsoleandro.corona.events.*;
 import com.github.alfonsoleandro.corona.functions.FeelSymptoms;
 import com.github.alfonsoleandro.corona.functions.RandomSneezes;
+import com.github.alfonsoleandro.corona.utils.Message;
 import com.github.alfonsoleandro.corona.utils.PAPI;
+import com.github.alfonsoleandro.mputils.files.YamlFile;
+import com.github.alfonsoleandro.mputils.managers.MessageSender;
+import com.github.alfonsoleandro.mputils.reloadable.ReloaderPlugin;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import net.milkbowl.vault.economy.Economy;
@@ -21,52 +25,45 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public final class Corona extends JavaPlugin {
+public final class Corona extends ReloaderPlugin {
 
-    final PluginDescriptionFile pdfFile = getDescription();
-    final public String version = pdfFile.getVersion();
-    final char color = 'c';
-    final String name = ChatColor.translateAlternateColorCodes('&', "&f[&" + color + pdfFile.getName() + "&f]");
-    private Economy econ = null;
-    private FileConfiguration players = null;
-    private File playersFile = null;
-    final public String exclamation = ChatColor.translateAlternateColorCodes('&', "&e&l(&4&l!&e&l)");
+    private final String version = getDescription().getVersion();
+    private MessageSender<Message> messageSender;
+    private Economy economy;
     private String latestVersion;
     private PAPI papiExpansion;
+    private YamlFile configYaml;
+    private YamlFile playersYaml;
 
-    public void send(String msg) {
-        Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', name + msg));
-    }
 
     @Override
     public void onEnable() {
-        send("&aEnabled&f. Version: &e" + version);
-        send("&fThank you for using my plugin! &" + color + pdfFile.getName() + "&f By " + pdfFile.getAuthors().get(0));
-        send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
-        send("Please consider subscribing to my yt channel: &c" + pdfFile.getWebsite());
+        registerFiles();
+        checkConfigFields();
+        this.messageSender = new MessageSender<>(this, Message.values(), this.configYaml, "config.prefix");
+        this.messageSender.send("&aEnabled&f. Version: &e" + this.version);
+        this.messageSender.send("&fThank you for using my plugin! &c" + getDescription().getName() + "&f By " + getDescription().getAuthors().get(0));
+        this.messageSender.send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
+        this.messageSender.send("Please consider subscribing to my yt channel: &c" + getDescription().getWebsite());
         if(setupEconomy()){
-            send("&aPlugin VAULT found");
+            this.messageSender.send("&aPlugin VAULT found");
         }else {
-            send("&cPlugin VAULT not found, disabling economy");
+            this.messageSender.send("&cPlugin VAULT not found, disabling economy");
         }
-        registerPlayers();
         arrancarFeelSymptoms();
         registerEvents();
-        registerConfig();
         registerCommands();
         registerMaskRecipe();
         registerPotionRecipe();
@@ -78,10 +75,10 @@ public final class Corona extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        send("&cDisabled&f. Version: &e" + version);
-        send("&fThank you for using my plugin! &" + color + pdfFile.getName() + "&f By " + pdfFile.getAuthors().get(0));
-        send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
-        send("Please consider subscribing to my yt channel: &c" + pdfFile.getWebsite());
+        this.messageSender.send("&cDisabled&f. Version: &e" + this.version);
+        this.messageSender.send("&fThank you for using my plugin! &c" + getDescription().getName() + "&f By " + getDescription().getAuthors().get(0));
+        this.messageSender.send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
+        this.messageSender.send("Please consider subscribing to my yt channel: &c" + getDescription().getWebsite());
         clearRecipes();
         unRegisterPAPIExpansion();
     }
@@ -89,39 +86,35 @@ public final class Corona extends JavaPlugin {
 
 
     public boolean setupEconomy() {
-        if(getServer().getPluginManager().getPlugin("Vault")==null) {
+        if(!getServer().getPluginManager().isPluginEnabled("Vault")) {
             return false;
         }
         RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
         if(rsp==null) {
             return false;
         }
-        econ = rsp.getProvider();
+        this.economy = rsp.getProvider();
         return true;
     }
 
     public Economy getEconomy() {
-        return this.econ;
+        return this.economy;
     }
 
 
     public void registerPAPIExpansion(){
         Plugin papi = getServer().getPluginManager().getPlugin("PlaceholderAPI");
         if(papi != null && papi.isEnabled()){
-            send("&aPlaceholderAPI found, the placeholder has been registered successfully");
-            papiExpansion = new PAPI(this);
-            papiExpansion.register();
+            this.messageSender.send("&aPlaceholderAPI found, the placeholder has been registered successfully");
+            this.papiExpansion = new PAPI(this);
+            this.papiExpansion.register();
         }else{
-            send("&cPlaceholderAPI not found, the placeholder was not registered");
+            this.messageSender.send("&cPlaceholderAPI not found, the placeholder was not registered");
         }
     }
 
     public void unRegisterPAPIExpansion(){
-        try{
-            papiExpansion.unregister();
-        }catch (Exception ignored){
-            assert true;
-        }
+        if(this.papiExpansion != null) this.papiExpansion.unregister();
     }
 
 
@@ -136,15 +129,15 @@ public final class Corona extends JavaPlugin {
             final int timed_out = 1250;
             con.setConnectTimeout(timed_out);
             con.setReadTimeout(timed_out);
-            latestVersion = new BufferedReader(new InputStreamReader(con.getInputStream())).readLine();
-            if (latestVersion.length() <= 7) {
-                if(!version.equals(latestVersion)){
-                    send(exclamation+"&c There is a new version available. &e(&7"+ latestVersion +"&e)");
-                    send(exclamation+"&c Download it here:&f https://bit.ly/2XTzden");
+            this.latestVersion = new BufferedReader(new InputStreamReader(con.getInputStream())).readLine();
+            if (this.latestVersion.length() <= 7) {
+                if(!this.version.equals(this.latestVersion)){
+                    this.messageSender.send("&e(&c&l!&e)&c There is a new version available. &e(&7"+ this.latestVersion +"&e)");
+                    this.messageSender.send("&e(&c&l!&e)&c Download it here:&f https://bit.ly/2XTzden");
                 }
             }
         } catch (Exception ex) {
-            send("Error while checking updates.");
+            this.messageSender.send("Error while checking updates.");
         }
     }
 
@@ -162,38 +155,26 @@ public final class Corona extends JavaPlugin {
     FeelSymptoms symptoms;
 
     public void arrancarFeelSymptoms() {
-        symptoms = new FeelSymptoms(this);
-        symptoms.start();
+        this.symptoms = new FeelSymptoms(this);
+        this.symptoms.start();
     }
 
     RandomSneezes random;
 
     public void firstRun(){
-        random = new RandomSneezes(this);
+        this.random = new RandomSneezes(this);
     }
 
     public void arrancarRandomSneezes() {
         if(getConfig().getBoolean("config.infected.random sneezes.enabled")) {
-            random.randomSneezes();
+            this.random.randomSneezes();
         }else {
-            send("&cRandom sneezes is disabled, to enable it enable it in your config.yml and reload the plugin");
+            this.messageSender.send("&cRandom sneezes is disabled, to enable it enable it in your config.yml and reload the plugin");
         }
     }
 
     public void cancelRandomSneezes(){
-        random.cancel();
-    }
-
-    /**
-     * Registers the config file for MPCorona.
-     */
-    private void registerConfig() {
-        File config = new File(this.getDataFolder(),"config.yml");
-        if(!config.exists()) {
-            getConfig().options().copyDefaults(true);
-            saveDefaultConfig();
-        }
-        checkConfigFields();
+        this.random.cancel();
     }
 
     /**
@@ -205,20 +186,20 @@ public final class Corona extends JavaPlugin {
 
         if(!configEndFile.contains("config.messages.check.self")){
             config.set("config.messages.check.self", "&fYou are %infected%");
-            saveConfig();
+            this.configYaml.save(true);
 
         }if(!configEndFile.contains("config.messages.check.others")){
             config.set("config.messages.check.others", "&f%player% is %infected%");
-            saveConfig();
+            this.configYaml.save(true);
 
         }if(!configEndFile.contains("config.messages.check infected")) {
             config.set("config.messages.check infected", "&cInfected");
-            saveConfig();
+            this.configYaml.save(true);
 
         }
         if(!configEndFile.contains("config.messages.check not infected")) {
             config.set("config.messages.check not infected", "&aHealthy");
-            saveConfig();
+            this.configYaml.save(true);
         }
 
     }
@@ -233,7 +214,7 @@ public final class Corona extends JavaPlugin {
         pm.registerEvents(new ItemCraft(this), this);
         pm.registerEvents(new PlaceEvent(this), this);
         pm.registerEvents(new JoinEvent(this), this);
-        pm.registerEvents(new CureByPotion(this, symptoms), this);
+        pm.registerEvents(new CureByPotion(this, this.symptoms), this);
     }
 
 
@@ -244,53 +225,33 @@ public final class Corona extends JavaPlugin {
         PluginCommand mainCommand = getCommand("corona");
 
         if(mainCommand == null){
-            send("&cThe main command has not been registered properly. Please check your plugin.yml is valid");
+            this.messageSender.send("&cThe main command has not been registered properly. Please check your plugin.yml is valid");
             this.setEnabled(false);
             return;
         }
 
-        mainCommand.setExecutor(new MainCommand(this, symptoms));
+        mainCommand.setExecutor(new MainCommand(this, this.symptoms));
         mainCommand.setTabCompleter(new MainCommandTabCompleter());
     }
 
-
-
-
-
-    //players yml
-
-    public FileConfiguration getPlayers(){
-        if(players == null){
-            reloadPlayers();
-        }
-        return players;
+    private void registerFiles(){
+        this.configYaml = new YamlFile(this, "config.yml");
+        this.playersYaml = new YamlFile(this, "players.yml");
     }
 
-    public void reloadPlayers(){
-        if(players == null){
-            playersFile = new File(getDataFolder(),"players.yml");
-        }
-        players = YamlConfiguration.loadConfiguration(playersFile);
-        Reader defConfigStream;
-        defConfigStream = new InputStreamReader(getResource("players.yml"), StandardCharsets.UTF_8);
-        YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(defConfigStream);
-        players.setDefaults(defConfig);
+    public void reloadFiles(){
+        this.configYaml.loadFileConfiguration();
+        this.playersYaml.loadFileConfiguration();
     }
 
-    public void savePlayers(){
-        try{
-            players.save(playersFile);
-        }catch(IOException e){
-            e.printStackTrace();
-        }
+    @Override
+    public void reload(boolean deep){
+        reloadFiles();
+        super.reload(deep);
     }
 
-    public void registerPlayers(){
-        playersFile = new File(getDataFolder(),"players.yml");
-        if(!playersFile.exists()){
-            saveResource("players.yml", false);
-        }
-    }
+
+
 
     //
     //REGISTER CURE POTION
@@ -386,7 +347,22 @@ public final class Corona extends JavaPlugin {
         }
     }
 
+    public MessageSender<Message> getMessageSender() {
+        return this.messageSender;
+    }
 
+    @Override
+    public @NotNull FileConfiguration getConfig(){
+        return this.configYaml.getAccess();
+    }
+
+    public YamlFile getConfigYaml() {
+        return this.configYaml;
+    }
+
+    public YamlFile getPlayersYaml() {
+        return this.playersYaml;
+    }
 
     //limpiar recipes y checkear si esta registrada
 

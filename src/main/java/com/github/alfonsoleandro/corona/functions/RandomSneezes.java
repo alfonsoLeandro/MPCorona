@@ -93,7 +93,7 @@ public class RandomSneezes {
 
     public void elegirRandom(String mode) {
         config = plugin.getConfig();
-        playersF = plugin.getPlayers();
+        playersF = plugin.getPlayersYaml().getAccess();
         players.clear();
         if (!Bukkit.getOnlinePlayers().isEmpty()){
             final List<String> infected = playersF.getStringList("players.infected");
@@ -207,7 +207,7 @@ public class RandomSneezes {
             infectedS.add(infected.getName());
             playersF.set("players.infected", infectedS);
             playersF.set("players.to infect."+infected.getName(), 0);
-            plugin.savePlayers();
+            plugin.getPlayersYaml().save(true);
 
             broadcast(justinfected.replace("%infecter%", infecter).replace("%infected%", infected.getName()));
             send(infected, nowinfec);
