@@ -1,0 +1,59 @@
+name: MPCorona
+version: ${project.version}
+main: com.github.alfonsoleandro.corona.Corona
+softdepend: [Vault, PlaceholderAPI]
+api-version: '1.13'
+authors: [lelesape]
+description: Make your users feel the pandemic
+website: http://bit.ly/2mwvHWN
+
+commands:
+  corona:
+    description: Main command
+    aliases: [covid]
+    usage: /<command> [help|version|reload]
+
+
+permissions:
+  corona.version:
+    description: Allows you to check the plugin's current version
+    default: op
+  corona.reload:
+    description: Allows you to reload the plugin and its files
+    default: op
+  corona.mask:
+    description: Allows you to craft the medical mask
+    default: op
+  corona.curePotion:
+    description: Allows you to craft the cure potion
+    default: op
+  corona.givemask:
+    description: Allows you to get the medical mask with a simple command
+    default: op
+  corona.givePotion:
+    description: Allows you to get the potion with a simple command
+    default: op
+  corona.infect:
+    description: Allows a player to infect another
+    default: op
+  corona.cure:
+    description: Allows a player to cure an infected player
+    default: op
+  corona.check.self:
+    description: Allows a player to check their own infection status
+    default: op
+  corona.check.others:
+    description: Allows a player to check other players infection status
+    default: op
+  corona.*:
+    description: Gives you access to every permission available
+    default: op
+    children:
+      corona.version: true
+      corona.reload: true
+      corona.mask: true
+      corona.givemask: true
+      corona.infect: true
+      corona.cure: true
+      corona.curePotion: true
+      corona.givePotion: true
