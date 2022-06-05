@@ -3,6 +3,7 @@ package com.github.alfonsoleandro.corona.commands;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,18 +18,13 @@ public class MainCommandTabCompleter implements TabCompleter {
      * @return true if the first string is partially or completely equal to the second/base string.
      */
     public boolean equalsToStringUnCompleted(String input, String string) {
-        for (int i = 0; i < string.length(); i++) {
-            if(input.equalsIgnoreCase(string.substring(0, i))) {
-                return true;
-            }
-        }
-        return false;
+        return string.substring(0, Math.min(string.length(), input.length())).equalsIgnoreCase(input);
     }
 
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        final List<String> possibilities = new ArrayList<>();
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
+        List<String> possibilities = new ArrayList<>();
 
         if(args.length == 1) {
             if(args[0].equalsIgnoreCase("")) {

@@ -26,6 +26,10 @@ public class InfectionManager extends Reloadable {
         loadPlayerInfections();
     }
 
+    public Set<String> getInfectedPlayers() {
+        return this.infectedPlayers;
+    }
+
     public boolean isInfected(String playerName){
         return this.infectedPlayers.contains(playerName);
     }

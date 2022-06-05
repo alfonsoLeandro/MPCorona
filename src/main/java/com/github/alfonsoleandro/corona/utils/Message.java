@@ -41,6 +41,7 @@ public enum Message implements MessageEnum {
     CHECK_OTHERS("check.others", "&f%player% is %infected%"),
     CHECK_INFECTED("&cInfected"),
     CHECK_NOT_INFECTED("&aHealthy"),
+    FEELING_SYMPTOMS("&cYou are feeling %symptom% because of coronavirus"),
     ;
 
     private final String path;

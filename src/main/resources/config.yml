@@ -68,6 +68,7 @@ config:
       G: 'GLASS'
       H: 'WATER_BUCKET'
       I: 'GLASS'
+  # The sound played when an infected player feels a symptom
   sound:
     enabled: true
     sound: AMBIENT_CAVE
