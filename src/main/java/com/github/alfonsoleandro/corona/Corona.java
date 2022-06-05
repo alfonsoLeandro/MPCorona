@@ -14,10 +14,10 @@ import com.github.alfonsoleandro.mputils.files.YamlFile;
 import com.github.alfonsoleandro.mputils.managers.MessageSender;
 import com.github.alfonsoleandro.mputils.reloadable.ReloaderPlugin;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.jetbrains.annotations.NotNull;
@@ -29,15 +29,16 @@ import java.net.URL;
 public final class Corona extends ReloaderPlugin {
 
     private final String version = getDescription().getVersion();
+    private String latestVersion;
     private MessageSender<Message> messageSender;
     private Settings settings;
     private InfectionManager infectionManager;
     private RecipesManager recipesManager;
-    private Economy economy;
-    private String latestVersion;
-    private PAPI papiExpansion;
+    private FeelSymptoms feelSymptoms;
     private YamlFile configYaml;
     private YamlFile playersYaml;
+    private Economy economy;
+    private PAPI papiExpansion;
 
 
     @Override
@@ -57,7 +58,8 @@ public final class Corona extends ReloaderPlugin {
         }else {
             this.messageSender.send("&cPlugin VAULT not found, disabling economy");
         }
-        arrancarFeelSymptoms();
+        this.feelSymptoms = new FeelSymptoms(this);
+        this.feelSymptoms.start();
         registerEvents();
         registerCommands();
         firstRun();
@@ -97,8 +99,7 @@ public final class Corona extends ReloaderPlugin {
 
 
     public void registerPAPIExpansion(){
-        Plugin papi = getServer().getPluginManager().getPlugin("PlaceholderAPI");
-        if(papi != null && papi.isEnabled()){
+        if(Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")){
             this.messageSender.send("&aPlaceholderAPI found, the placeholder has been registered successfully");
             this.papiExpansion = new PAPI(this);
             this.papiExpansion.register();
@@ -146,12 +147,6 @@ public final class Corona extends ReloaderPlugin {
         return this.latestVersion;
     }
 
-    FeelSymptoms symptoms;
-
-    public void arrancarFeelSymptoms() {
-        this.symptoms = new FeelSymptoms(this);
-        this.symptoms.start();
-    }
 
     RandomSneezes random;
 
@@ -220,7 +215,7 @@ public final class Corona extends ReloaderPlugin {
         pm.registerEvents(new ItemCraft(this), this);
         pm.registerEvents(new PlaceEvent(this), this);
         pm.registerEvents(new JoinEvent(this), this);
-        pm.registerEvents(new CureByPotion(this, this.symptoms), this);
+        pm.registerEvents(new CureByPotion(this, this.feelSymptoms), this);
     }
 
 
