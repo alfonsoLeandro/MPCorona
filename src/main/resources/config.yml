@@ -101,6 +101,8 @@ config:
     food: 20
   messages:
     no permission: '&cNo permission'
+    reloaded: '&aPlugin reloaded!'
+    unknown command: '&cUnknown command. Run &e/%command% help &cto see a list of commands'
     disabled: '&cThat command is disabled!'
     world disabled: '&cThat feature is disabled in this world'
     not online: '&cThat player does not exist or is not online'

@@ -1,6 +1,6 @@
 package com.github.alfonsoleandro.corona.commands;
 
-import com.github.alfonsoleandro.corona.functions.FeelSymptoms;
+import com.github.alfonsoleandro.corona.commands.commandhandlers.*;
 import com.github.alfonsoleandro.corona.Corona;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
@@ -30,15 +30,10 @@ import org.jetbrains.annotations.NotNull;
 
 public class MainCommand implements CommandExecutor {
 
-    final private Corona plugin;
-    final private FeelSymptoms feelSymptoms;
+    private final Corona plugin;
+    private final AbstractHandler cor;
     //Messages
     private String noPerm;
-    private String notInf;
-    private String tooManyInf;
-    private String mustBeInRadius;
-    private String alreadyInf;
-    private String worldDisabled;
     private String notCure;
     private String notInfected;
     private String notMoney;
@@ -53,9 +48,16 @@ public class MainCommand implements CommandExecutor {
     private String checkInfected;
     private String checkHealthy;
 
-    public MainCommand(Corona plugin, FeelSymptoms feelSymptoms){
+    public MainCommand(Corona plugin){
         this.plugin = plugin;
-        this.feelSymptoms = feelSymptoms;
+        this.cor = new HelpHandler(this.plugin,
+                new VersionHandler(this.plugin,
+                        new ReloadHandler(this.plugin,
+                                new InfectHandler(this.plugin,
+                                        null)
+                        )
+                )
+        );
         loadMessages();
     }
 
@@ -71,11 +73,6 @@ public class MainCommand implements CommandExecutor {
         FileConfiguration config = plugin.getConfig();
 
         noPerm = config.getString("config.messages.no permission");
-        notInf = config.getString("config.messages.you are not infected");
-        tooManyInf = config.getString("config.messages.too many infected");
-        mustBeInRadius = config.getString("config.messages.must be in radius");
-        alreadyInf = config.getString("config.messages.already infected");
-        worldDisabled = config.getString("config.messages.world disabled");
         notCure = config.getString("config.messages.cure disabled");
         notInfected = config.getString("config.messages.player not infected");
         notMoney = config.getString("config.messages.not enough money");
@@ -97,6 +94,7 @@ public class MainCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, String[] args) {
         FileConfiguration config = plugin.getConfig();
+        this.cor.handle(sender, label, args);
 
 
         if(args.length == 0 || args[0].equalsIgnoreCase("help")) {
@@ -109,101 +107,6 @@ public class MainCommand implements CommandExecutor {
             send(sender, "&f/" + label + " giveMask <player>");
             send(sender, "&f/" + label + " givePotion <player>");
             send(sender, "&f/" + label + " check <player>");
-
-
-        }else if(args[0].equalsIgnoreCase("reload")) {
-            if(!sender.hasPermission("corona.reload")) {
-                send(sender, noPerm);
-                return true;
-            }
-            this.plugin.reload(false);
-            feelSymptoms.cancel();
-            feelSymptoms.start();
-            plugin.cancelRandomSneezes();
-            plugin.arrancarRandomSneezes();
-            loadMessages();
-            send(sender, "&aFiles reloaded");
-
-
-
-
-
-        }else if(args[0].equalsIgnoreCase("version")) {
-            if(!sender.hasPermission("corona.version")) {
-                send(sender, noPerm);
-                return true;
-            }
-            send(sender, "&fVersion: "+plugin.getVersion());
-            if(!plugin.getLatestVersion().equals(plugin.getVersion())){
-                send(sender, "&cNew version available!");
-                send(sender, "&fDownload: &ahttps://bit.ly/2XTzden");
-            }else{
-                send(sender, "&aYou have the latest version!");
-            }
-
-
-
-
-
-
-        }else if(args[0].equalsIgnoreCase("infect")) {
-            FileConfiguration players = plugin.getPlayersYaml().getAccess();
-            List<String> disabledWorlds = config.getStringList("config.disabled worlds");
-
-            if(!config.getBoolean("config.infect command.enabled")) {
-                send(sender, config.getString("config.messages.disabled"));
-                return true;
-            }
-
-            if(sender instanceof Player){
-                if(!sender.hasPermission("corona.infect")){
-                    send(sender, noPerm);
-                    return true;
-                }
-                if(disabledWorlds.contains(((Player) sender).getWorld().getName())) {
-                    send(sender, worldDisabled);
-                    return true;
-                }
-                if(!players.getStringList("players.infected").contains(sender.getName())) {
-                    send(sender, notInf);
-                    return true;
-                }
-                if(players.contains("players.to infect."+sender.getName())) {
-                    if(players.getInt("players.to infect."+sender.getName()) >= config.getInt("config.infect command.infected per player")) {
-                        send(sender, tooManyInf);
-                        return true;
-                    }
-                }
-            }
-
-            if(args.length > 1 && Bukkit.getPlayer(args[1]) != null) {
-                Player newInf = Bukkit.getPlayer(args[1]);
-                double radius = Math.pow(config.getDouble("config.infect command.radius"), 2);
-
-                if(!(sender instanceof Player) || ((Player)sender).getLocation().distanceSquared(newInf.getLocation()) <= radius) {
-
-                    if(!players.getStringList("players.infected").contains(newInf.getName())) {
-
-                        infect(newInf, sender);
-
-                    }else {
-                        send(sender, alreadyInf);
-                    }
-
-
-                }else {
-                    send(sender, mustBeInRadius.replace("%radius%", String.valueOf(radius)));
-                }
-
-
-
-            }else {
-                send(sender, "&cUse: &f/"+label+" infect (player)");
-            }
-
-
-
-
 
         }else if(args[0].equalsIgnoreCase("cure")) {
             FileConfiguration players = plugin.getPlayersYaml().getAccess();
@@ -472,33 +375,6 @@ public class MainCommand implements CommandExecutor {
 
 
 
-
-
-    public void infect(Player newinf, CommandSender infecter) {
-        FileConfiguration config = plugin.getConfig();
-        FileConfiguration players = plugin.getPlayersYaml().getAccess();
-        String nowInfected = config.getString("config.messages.now infected");
-        String justInfected = config.getString("config.messages.just infected someone");
-        int toInf;
-
-        if(players.contains("players.to infect."+infecter.getName())) {
-            toInf = players.getInt("players.to infect."+infecter.getName())+1;
-        }else {
-            toInf = 1;
-        }
-
-        List<String> infected = players.getStringList("players.infected");
-        infected.add(newinf.getName());
-        players.set("players.infected", infected);
-        if(infecter instanceof Player) {
-            players.set("players.to infect."+infecter.getName(), toInf);
-        }
-        players.set("players.to infect."+newinf.getName(), 0);
-        plugin.getPlayersYaml().save(true);
-        bCast(justInfected.replace("%infecter%", infecter.getName()).replace("%infected%", newinf.getName()));
-        send(newinf, nowInfected);
-    }
-
     public void cure(Player toCure, CommandSender curer){
         FileConfiguration config = plugin.getConfig();
         FileConfiguration players = plugin.getPlayersYaml().getAccess();
@@ -512,8 +388,8 @@ public class MainCommand implements CommandExecutor {
         players.set("players.infected", infected);
         players.set("players.to infect."+toCure.getName(), 0);
         plugin.getPlayersYaml().save(true);
-        feelSymptoms.cancel();
-        feelSymptoms.start();
+//        feelSymptoms.cancel();
+//        feelSymptoms.start();
         send(curer, curedsmn.replace("%cured%", toCure.getName()));
         send(toCure, cured.replace("%curer%", curer.getName()));
         bCast(hascured.replace("%curer%", curer.getName()).replace("%cured%", toCure.getName()));

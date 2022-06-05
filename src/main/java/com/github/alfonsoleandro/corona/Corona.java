@@ -73,7 +73,7 @@ public final class Corona extends ReloaderPlugin {
         this.messageSender.send("&fJoin my discord server at &chttps://discordapp.com/invite/ZznhQud");
         this.messageSender.send("Please consider subscribing to my yt channel: &c" + getDescription().getWebsite());
         unRegisterPAPIExpansion();
-        this.infectionManager.saveInfectedPlayersToFile();
+        this.infectionManager.saveToFile();
         this.recipesManager.unregisterRecipes();
     }
 
@@ -176,7 +176,7 @@ public final class Corona extends ReloaderPlugin {
      */
     private void checkConfigFields(){
         FileConfiguration configEndFile = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
-        FileConfiguration config = getConfig();
+        FileConfiguration config = getConfigYaml().getAccess();
 
         if(!configEndFile.contains("config.messages.check.self")){
             config.set("config.messages.check.self", "&fYou are %infected%");
@@ -193,6 +193,14 @@ public final class Corona extends ReloaderPlugin {
         }
         if(!configEndFile.contains("config.messages.check not infected")) {
             config.set("config.messages.check not infected", "&aHealthy");
+            this.configYaml.save(true);
+        }
+        if(!configEndFile.contains("config.message.reloaded")) {
+            config.set("config.messages.reloaded", "&aPlugin reloaded!");
+            this.configYaml.save(true);
+        }
+        if(!configEndFile.contains("config.message.unknown command")) {
+            config.set("config.messages.unknown command", "&cUnknown command. Run &e/%command% help &cto see a list of commands");
             this.configYaml.save(true);
         }
 
@@ -224,7 +232,7 @@ public final class Corona extends ReloaderPlugin {
             return;
         }
 
-        mainCommand.setExecutor(new MainCommand(this, this.symptoms));
+        mainCommand.setExecutor(new MainCommand(this));
         mainCommand.setTabCompleter(new MainCommandTabCompleter());
     }
 
