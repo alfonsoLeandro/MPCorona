@@ -203,6 +203,10 @@ public final class Corona extends ReloaderPlugin {
             config.set("config.messages.unknown command", "&cUnknown command. Run &e/%command% help &cto see a list of commands");
             this.configYaml.save(true);
         }
+        if(!configEndFile.contains("config.message.console cannot get infected")) {
+            config.set("config.messages.console cannot get infected", "&cThe console cannot get infected");
+            this.configYaml.save(true);
+        }
 
     }
 
@@ -249,6 +253,7 @@ public final class Corona extends ReloaderPlugin {
     @Override
     public void reload(boolean deep){
         reloadFiles();
+        this.settings.reload(false);
         super.reload(deep);
     }
 
@@ -283,3 +288,4 @@ public final class Corona extends ReloaderPlugin {
 
 
 }
+//TODO: deploy MPUtils before uploading

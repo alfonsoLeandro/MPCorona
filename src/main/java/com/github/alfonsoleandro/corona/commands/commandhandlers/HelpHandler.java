@@ -17,8 +17,13 @@ public class HelpHandler extends AbstractHandler{
     @Override
     protected void internalHandle(CommandSender sender, String label, String[] args) {
         this.messageSender.send(sender, "&6List of commands");
-        this.messageSender.send(sender, "&f/"+label+" help");
-        this.messageSender.send(sender, "&f/"+label+" version");
-        this.messageSender.send(sender, "&f/"+label+" reload");
+        this.messageSender.send(sender, "&f/" + label + " help");
+        this.messageSender.send(sender, "&f/" + label + " version");
+        this.messageSender.send(sender, "&f/" + label + " reload");
+        this.messageSender.send(sender, "&f/" + label + " infect (player)");
+        this.messageSender.send(sender, "&f/" + label + " cure (player)");
+        this.messageSender.send(sender, "&f/" + label + " giveMask <player>");
+        this.messageSender.send(sender, "&f/" + label + " givePotion <player>");
+        this.messageSender.send(sender, "&f/" + label + " check <player>");
     }
 }

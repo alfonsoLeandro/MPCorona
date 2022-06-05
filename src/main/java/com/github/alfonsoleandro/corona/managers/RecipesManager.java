@@ -1,6 +1,7 @@
 package com.github.alfonsoleandro.corona.managers;
 
 import com.github.alfonsoleandro.corona.Corona;
+import com.github.alfonsoleandro.mputils.itemstacks.MPItemStacks;
 import com.github.alfonsoleandro.mputils.reloadable.Reloadable;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
@@ -24,6 +25,8 @@ public class RecipesManager extends Reloadable {
     private final Settings settings;
     private final NamespacedKey potionRecipeKey;
     private final NamespacedKey maskRecipeKey;
+    private ItemStack maskItem;
+    private ItemStack curePotionItem;
 
     public RecipesManager(Corona plugin) {
         super(plugin);
@@ -31,32 +34,20 @@ public class RecipesManager extends Reloadable {
         this.settings = plugin.getSettings();
         this.potionRecipeKey = new NamespacedKey(plugin, "CurePotion");
         this.maskRecipeKey = new NamespacedKey(plugin, "FaceMask");
+        setMaskItem();
+        setCurePotionItem();
         registerMaskRecipe();
         registerPotionRecipe();
     }
 
     public void registerPotionRecipe() {
-        if(!this.settings.isCurePotionEnabled() || !this.settings.isCurePotionRecipeEnabled()) {
+        if(this.settings.isCurePotionDisabled() || !this.settings.isCurePotionRecipeEnabled()) {
             return;
         }
         FileConfiguration config = this.plugin.getConfigYaml().getAccess();
-
         String path = "config.cure potion";
-        ItemStack potion = new ItemStack(Material.POTION);
-        ItemMeta meta = potion.getItemMeta();
-        assert meta != null;
-        ((PotionMeta)meta).addCustomEffect(new PotionEffect(PotionEffectType.ABSORPTION, 1200, 4), true);
-        ((PotionMeta)meta).addCustomEffect(new PotionEffect(PotionEffectType.WEAKNESS, 1200, 4), true);
 
-        meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(config.getString(path + ".name"))));
-        List<String> lore = new ArrayList<>();
-        for (String linea : config.getStringList(path+".lore")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', linea));
-        }
-        meta.setLore(lore);
-        potion.setItemMeta(meta);
-
-        ShapedRecipe potionRecipe = new ShapedRecipe(this.potionRecipeKey, potion);
+        ShapedRecipe potionRecipe = new ShapedRecipe(this.potionRecipeKey, this.curePotionItem);
         potionRecipe.shape("ABC","DEF","GHI");
         potionRecipe.setIngredient('A', Material.valueOf(config.getString(path+".recipe.A")));
         potionRecipe.setIngredient('B', Material.valueOf(config.getString(path+".recipe.B")));
@@ -72,40 +63,14 @@ public class RecipesManager extends Reloadable {
     }
 
 
-
     public void registerMaskRecipe() {
-        if(!this.settings.isMaskEnabled() || !this.settings.isMaskRecipeEnabled()) {
+        if(this.settings.isMaskDisabled() || !this.settings.isMaskRecipeEnabled()) {
             return;
         }
         FileConfiguration config = this.plugin.getConfigYaml().getAccess();
         String path = "config.mask";
-        String playerSkullTextureURL = config.getString(path+".texture URL");
-        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta skull = (SkullMeta) head.getItemMeta();
 
-        GameProfile profile = new GameProfile(UUID.randomUUID(), null);
-        byte[] encodedData = Base64.getEncoder().encode(String.format("{textures:{SKIN:{url:\"%s\"}}}", playerSkullTextureURL).getBytes());
-        profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
-        Field profileField;
-        try {
-            assert skull != null;
-            profileField = skull.getClass().getDeclaredField("profile");
-            profileField.setAccessible(true);
-            profileField.set(skull, profile);
-        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {
-            e1.printStackTrace();
-        }
-
-        skull.setDisplayName(ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(config.getString(path + ".name"))));
-        List<String> lore = new ArrayList<>();
-        for (String linea : config.getStringList(path+".lore")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', linea));
-        }
-        skull.setLore(lore);
-        head.setItemMeta(skull);
-        head.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 10);
-
-        ShapedRecipe maskRecipe = new ShapedRecipe(this.maskRecipeKey, head);
+        ShapedRecipe maskRecipe = new ShapedRecipe(this.maskRecipeKey, this.maskItem);
         maskRecipe.shape("ABC","DEF","GHI");
         maskRecipe.setIngredient('A', Material.valueOf(config.getString(path+".recipe.A")));
         maskRecipe.setIngredient('B', Material.valueOf(config.getString(path+".recipe.B")));
@@ -120,6 +85,44 @@ public class RecipesManager extends Reloadable {
         Bukkit.addRecipe(maskRecipe);
     }
 
+    public void setMaskItem() {
+        this.maskItem = MPItemStacks.newItemStack(Material.PLAYER_HEAD,
+                1,
+                this.settings.getMaskItemName(),
+                this.settings.getMaskItemLore());
+        SkullMeta skull = (SkullMeta) this.maskItem.getItemMeta();
+
+        GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+        byte[] encodedData = Base64.getEncoder().encode(String.format("{textures:{SKIN:{url:\"%s\"}}}",
+                this.settings.getMaskSkinURL()).getBytes());
+        profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
+        Field profileField;
+        try {
+            assert skull != null;
+            profileField = skull.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            profileField.set(skull, profile);
+        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {
+            e1.printStackTrace();
+        }
+
+        this.maskItem.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 10);
+    }
+
+    public void setCurePotionItem(){
+        ItemStack potion = new ItemStack(Material.POTION);
+        this.curePotionItem = MPItemStacks.newItemStack(Material.POTION,
+                1,
+                this.settings.getCurePotionItemName(),
+                this.settings.getCurePotionItemLore());
+        ItemMeta meta = potion.getItemMeta();
+        assert meta != null;
+        ((PotionMeta)meta).addCustomEffect(new PotionEffect(PotionEffectType.ABSORPTION, 1200, 4), true);
+        ((PotionMeta)meta).addCustomEffect(new PotionEffect(PotionEffectType.WEAKNESS, 1200, 4), true);
+
+        potion.setItemMeta(meta);
+    }
+
 
     public void unregisterRecipes(){
         Bukkit.getServer().removeRecipe(this.potionRecipeKey);
@@ -127,11 +130,19 @@ public class RecipesManager extends Reloadable {
     }
 
 
+    public ItemStack getMaskItem() {
+        return this.maskItem;
+    }
 
+    public ItemStack getCurePotionItem() {
+        return this.curePotionItem;
+    }
 
     @Override
     public void reload(boolean deep) {
         unregisterRecipes();
+        setMaskItem();
+        setCurePotionItem();
         registerMaskRecipe();
         registerPotionRecipe();
     }

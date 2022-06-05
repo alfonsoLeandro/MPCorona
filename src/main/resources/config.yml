@@ -143,6 +143,7 @@ config:
       others: '&f%player% is %infected%'
     check infected: '&cInfected'
     check not infected: '&aHealthy'
+    console cannot get infected: '&cThe console cannot get infected'
   infected:
     random sneezes:
       # Should random infected players sneeze and have the possibility to infect others by doing so?

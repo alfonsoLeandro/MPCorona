@@ -50,6 +50,19 @@ public class InfectionManager extends Reloadable {
         this.messageSender.send(infected, Message.NOW_INFECTED);
     }
 
+    public void cure(Player toCure, CommandSender curer){
+        this.infectedPlayers.remove(toCure.getName());
+        this.playerInfections.remove(toCure.getName());
+
+        this.messageSender.send(curer, Message.CURED_SOMEONE,
+                "%cured%", toCure.getName());
+        this.messageSender.send(curer, Message.CURED_YOU,
+                "%curer%", curer.getName());
+        this.messageSender.broadcast(null, Message.HAS_CURED,
+                "%curer%", curer.getName(),
+                "%cured%", toCure.getName());
+    }
+
 
     private void loadInfectedPlayers(){
         FileConfiguration players = this.plugin.getPlayersYaml().getAccess();
