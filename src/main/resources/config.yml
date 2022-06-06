@@ -127,7 +127,7 @@ config:
     cured you: '&f%curer% &ajust cured you'
     has cured: '&f%curer% &ahas cured &f%cured%'
     player not infected: '&cThat player is not infected'
-    sneezed: '&c%player% just sneezed '
+    sneezed: '&c%player% just sneezed'
     you sneezed: '&cYou just sneezed! Bless you'
     cannot place: '&cHey, if i were you i would put that on my head instead of the floor'
     cure command disabled: '&cEconomy is disabled, therefore the cure command is also disabled'

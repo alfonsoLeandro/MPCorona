@@ -42,6 +42,8 @@ public enum Message implements MessageEnum {
     CHECK_INFECTED("&cInfected"),
     CHECK_NOT_INFECTED("&aHealthy"),
     FEELING_SYMPTOMS("&cYou are feeling %symptom% because of coronavirus"),
+    YOU_SNEEZED("&cYou just sneezed! Bless you"),
+    SNEEZED("&c%player% just sneezed"),
     ;
 
     private final String path;

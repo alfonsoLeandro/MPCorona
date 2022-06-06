@@ -4,11 +4,10 @@ import com.github.alfonsoleandro.corona.Corona;
 import com.github.alfonsoleandro.mputils.reloadable.Reloadable;
 import com.github.alfonsoleandro.mputils.sound.SoundSettings;
 import com.github.alfonsoleandro.mputils.time.TimeUtils;
-import me.clip.placeholderapi.util.TimeUtil;
+import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class Settings extends Reloadable {
 
@@ -23,16 +22,22 @@ public class Settings extends Reloadable {
     private boolean cureCommandDisabled;
     private boolean symptomsDisabledInDisabledWorlds;
     private boolean symptomSoundEnabled;
+    private boolean sneezesSoundEnabled;
 
     private int maxInfectedPerPlayer;
     private int infectRadius;
     private int symptomsIntervalTicks;
+    private int sneezesIntervalTicks;
+    private int sneezesRadiusSquared;
+    private int probToInfectUsingMask;
+    private int probToInfectWithoutMask;
 
     private double curePrice;
 
     private String maskSkinURL;
     private String maskItemName;
     private String curePotionItemName;
+    private String randomSneezesMode;
 
     private List<String> disabledWorlds;
     private List<String> maskItemLore;
@@ -40,6 +45,7 @@ public class Settings extends Reloadable {
     private List<String> possibleSymptoms;
 
     private SoundSettings symptomsSound;
+    private SoundSettings sneezesSound;
     //</editor-fold>
 
     public Settings(Corona plugin) {
@@ -58,16 +64,22 @@ public class Settings extends Reloadable {
         this.cureCommandDisabled = !config.getBoolean("config.cure.enabled");
         this.symptomsDisabledInDisabledWorlds = config.getBoolean("config.symptoms disabled in disabled worlds");
         this.symptomSoundEnabled = config.getBoolean("config.sound.enabled");
+        this.sneezesSoundEnabled = config.getBoolean("config.infected.random sneezes.sound.enabled");
 
         this.maxInfectedPerPlayer = config.getInt("config.infect command.infected per player");
         this.infectRadius = config.getInt("config.infect command.radius");
         this.symptomsIntervalTicks = TimeUtils.getTicks(config.getString("config.infected.interval"));
+        this.sneezesIntervalTicks = TimeUtils.getTicks(config.getString("config.infected.random sneezes.interval"));
+        this.sneezesRadiusSquared = (int) Math.pow(config.getInt("config.infected.random sneezes.radius"), 2);
+        this.probToInfectUsingMask = config.getInt("config.infected.random sneezes.mask effectiveness");
+        this.probToInfectWithoutMask = config.getInt("config.infected.random sneezes.probability to infect");
 
         this.curePrice = config.getDouble("config.cure.price");
 
         this.maskSkinURL = config.getString("config.mask.texture URL");
         this.maskItemName = config.getString("config.mask.name");
         this.curePotionItemName = config.getString("config.cure potion.name");
+        this.randomSneezesMode = config.getString("config.infected.random sneezes.mode");
 
         this.disabledWorlds = config.getStringList("config.disabled worlds");
         this.maskItemLore = config.getStringList("config.mask.lore");
@@ -75,6 +87,9 @@ public class Settings extends Reloadable {
         this.possibleSymptoms = config.getStringList("config.infected.symptoms");
 
         this.symptomsSound = new SoundSettings(config.getString("config.sound.sound"), .6F, 1F);
+        this.sneezesSound = new SoundSettings(config.getString("config.infected.random sneezes.sound.params.sound"),
+                config.getDouble("config.infected.random sneezes.sound.params.volume"),
+                config.getDouble("config.infected.random sneezes.sound.params.pitch"))
     }
 
     //<editor-fold desc="Getters" default-state="collapsed">
@@ -110,6 +125,10 @@ public class Settings extends Reloadable {
         return this.symptomSoundEnabled;
     }
 
+    public boolean isSneezesSoundEnabled() {
+        return sneezesSoundEnabled;
+    }
+
     public int getMaxInfectedPerPlayer() {
         return this.maxInfectedPerPlayer;
     }
@@ -120,6 +139,22 @@ public class Settings extends Reloadable {
 
     public int getSymptomsIntervalTicks() {
         return this.symptomsIntervalTicks;
+    }
+
+    public int getSneezesIntervalTicks() {
+        return sneezesIntervalTicks;
+    }
+
+    public int getSneezesRadiusSquared() {
+        return sneezesRadiusSquared;
+    }
+
+    public int getProbToInfectUsingMask() {
+        return probToInfectUsingMask;
+    }
+
+    public int getProbToInfectWithoutMask() {
+        return probToInfectWithoutMask;
     }
 
     public double getCurePrice() {
@@ -136,6 +171,10 @@ public class Settings extends Reloadable {
 
     public String getCurePotionItemName() {
         return this.curePotionItemName;
+    }
+
+    public String getRandomSneezesMode() {
+        return randomSneezesMode;
     }
 
     public List<String> getDisabledWorlds() {
@@ -156,6 +195,10 @@ public class Settings extends Reloadable {
 
     public SoundSettings getSymptomsSound() {
         return this.symptomsSound;
+    }
+
+    public SoundSettings getSneezesSound() {
+        return sneezesSound;
     }
 
     //</editor-fold>
