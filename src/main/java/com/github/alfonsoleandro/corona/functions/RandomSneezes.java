@@ -12,16 +12,10 @@ import com.github.alfonsoleandro.corona.managers.Settings;
 import com.github.alfonsoleandro.corona.utils.Message;
 import com.github.alfonsoleandro.mputils.managers.MessageSender;
 import com.github.alfonsoleandro.mputils.reloadable.Reloadable;
+import com.github.alfonsoleandro.mputils.sound.SoundUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -33,7 +27,10 @@ public class RandomSneezes extends Reloadable {
     private final InfectionManager infectionManager;
     private final RecipesManager recipesManager;
     private final MessageSender<Message> messageSender;
-    private final Random r;
+    private final Random random;
+    private String mode;
+    private int time;
+    private int radiusSquared;
     private BukkitTask runnable;
 
     public RandomSneezes(Corona plugin) {
@@ -43,57 +40,63 @@ public class RandomSneezes extends Reloadable {
         this.infectionManager = plugin.getInfectionManager();
         this.recipesManager = plugin.getRecipesManager();
         this.messageSender = plugin.getMessageSender();
-        this.r = new Random();
-    }
-    public void send(CommandSender sender, String msg) {
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("config.prefix") + " " + msg));
+        this.random = new Random();
+        this.time = this.settings.getSneezesIntervalTicks();
+        this.mode = this.settings.getRandomSneezesMode();
+        this.radiusSquared = this.settings.getSneezesRadiusSquared();
+        if(this.settings.isRandomSneezesEnabled()) randomSneezes();
     }
 
 
     public void randomSneezes() {
-        int time = this.settings.getSneezesIntervalTicks();
-        String mode = this.settings.getRandomSneezesMode();
-        int radiusSquared = this.settings.getSneezesRadiusSquared();
-
         this.runnable = new BukkitRunnable() {
 
             @Override
             public void run() {
                 if(Bukkit.getOnlinePlayers().size() < 2) return;
-                if(infectionManager.getInfectedPlayers().isEmpty()) return;
-                if(mode.equalsIgnoreCase("all")) {
-                    Set<String> infected = infectionManager.getInfectedPlayers();
-
-
+                if(RandomSneezes.this.infectionManager.getInfectedPlayers().isEmpty()) return;
+                Set<String> infected = RandomSneezes.this.infectionManager.getInfectedPlayers();
+                if(RandomSneezes.this.mode.equalsIgnoreCase("all")) {
                     for (Player inf : Bukkit.getOnlinePlayers()) {
-                        if(!infected.contains(inf.getName())) continue;
-                        if(settings.isSneezesSoundEnabled()){
-                            SoundUtils.playSound(inf.getLocation(),
-                                    settings.getSneezesSound());
-                        }
-                        messageSender.send(inf, Message.YOU_SNEEZED);
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            if(p.equals(inf) || infected.contains(p.getName())) continue;
-                            if(!p.getWorld().equals(inf.getWorld())) continue;
-                            if(inf.getLocation().distanceSquared(p.getLocation()) > radiusSquared) continue;
-                            messageSender.send(p, Message.SNEEZED,
-                                    "%player%", inf.getName());
-                            int prob = hasMask(inf) || hasMask(p) ? settings.getProbToInfectUsingMask() : settings.getProbToInfectWithoutMask();
-                            if(r.nextInt(100) <= prob) {
-                                infectionManager.infect(inf, p);
-                            }
-                        }
+                        sneeze(inf);
                     }
-
-
                 } else {
-                    elegirRandom("all");
+                    List<Player> infectedPlayersOnline = new ArrayList<>();
+                    for(Player p : Bukkit.getOnlinePlayers()){
+                        if(infected.contains(p.getName())) infectedPlayersOnline.add(p);
+                    }
+                    Player inf = infectedPlayersOnline.get(RandomSneezes.this.random.nextInt(infectedPlayersOnline.size()));
+                    sneeze(inf);
                 }
 
             }
 
-        }.runTaskTimer(plugin, time, time);
+        }.runTaskTimer(this.plugin, this.time, this.time);
 
+    }
+
+    private void sneeze(Player player){
+        Set<String> infected = RandomSneezes.this.infectionManager.getInfectedPlayers();
+
+        if(!infected.contains(player.getName())) return;
+        if(RandomSneezes.this.settings.isSneezesSoundEnabled()){
+            SoundUtils.playSound(player.getLocation(),
+                    RandomSneezes.this.settings.getSneezesSound());
+        }
+        RandomSneezes.this.messageSender.send(player, Message.YOU_SNEEZED);
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if(p.equals(player) || infected.contains(p.getName())) continue;
+            if(!p.getWorld().equals(player.getWorld())) continue;
+            if(player.getLocation().distanceSquared(p.getLocation()) > this.radiusSquared) continue;
+            RandomSneezes.this.messageSender.send(p, Message.SNEEZED,
+                    "%player%", player.getName());
+            int prob = hasMask(player) || hasMask(p) ?
+                    RandomSneezes.this.settings.getProbToInfectUsingMask() :
+                    RandomSneezes.this.settings.getProbToInfectWithoutMask();
+            if(RandomSneezes.this.random.nextInt(100) <= prob) {
+                RandomSneezes.this.infectionManager.infect(player, p.getName(), true);
+            }
+        }
 
     }
 
@@ -101,16 +104,21 @@ public class RandomSneezes extends Reloadable {
     public boolean hasMask(Player p) {
         ItemStack helmet = p.getInventory().getHelmet();
         ItemStack mask = this.recipesManager.getMaskItem(); // TODO
-        return helmet != null && helmet.equals(mask);
+        return helmet != null && helmet.isSimilar(mask);
     }
 
 
     public void cancel() {
-        runnable.cancel();
+        if(this.runnable != null) this.runnable.cancel();
     }
 
     @Override
-    public void reload(boolean b) {
+    public void reload(boolean deep) {
+        this.time = this.settings.getSneezesIntervalTicks();
+        this.mode = this.settings.getRandomSneezesMode();
+        this.radiusSquared = this.settings.getSneezesRadiusSquared();
+        cancel();
+        if(this.settings.isRandomSneezesEnabled()) randomSneezes();
 
     }
 }

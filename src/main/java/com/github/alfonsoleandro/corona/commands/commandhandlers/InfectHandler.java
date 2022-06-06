@@ -76,7 +76,7 @@ public class InfectHandler extends AbstractHandler{
             }
 
         }
-        this.infectionManager.infect(toInfect, sender);
+        this.infectionManager.infect(toInfect, sender.getName(), sender instanceof Player);
 
 
     }

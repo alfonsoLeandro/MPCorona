@@ -41,7 +41,7 @@ public class RecipesManager extends Reloadable {
     }
 
     public void registerPotionRecipe() {
-        if(this.settings.isCurePotionDisabled() || !this.settings.isCurePotionRecipeEnabled()) {
+        if(this.settings.isCurePotionDisabled() || this.settings.isCurePotionRecipeDisabled()) {
             return;
         }
         FileConfiguration config = this.plugin.getConfigYaml().getAccess();
@@ -64,7 +64,7 @@ public class RecipesManager extends Reloadable {
 
 
     public void registerMaskRecipe() {
-        if(this.settings.isMaskDisabled() || !this.settings.isMaskRecipeEnabled()) {
+        if(this.settings.isMaskDisabled() || this.settings.isMaskRecipeDisabled()) {
             return;
         }
         FileConfiguration config = this.plugin.getConfigYaml().getAccess();

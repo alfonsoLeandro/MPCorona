@@ -1,6 +1,8 @@
 package com.github.alfonsoleandro.corona.events;
 
 import com.github.alfonsoleandro.corona.Corona;
+import com.github.alfonsoleandro.corona.utils.Message;
+import com.github.alfonsoleandro.mputils.managers.MessageSender;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -18,50 +20,25 @@ import java.util.List;
 public class PlaceEvent implements Listener {
 
 
-    final private Corona plugin;
+    private final Corona plugin;
+    private final MessageSender<Message> messageSender;
 
     public PlaceEvent(Corona plugin) {
         this.plugin = plugin;
+        this.messageSender = plugin.getMessageSender();
     }
 
 
-    public ItemStack getMask() {
-
-        String path = "config.mask.";
-        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta skull = (SkullMeta) head.getItemMeta();
-
-        skull.setDisplayName(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString(path+".name")));
-        List<String> lore = new ArrayList<>();
-        for (String linea : plugin.getConfig().getStringList(path+".lore")) {
-            lore.add(ChatColor.translateAlternateColorCodes('&', linea));
-        }
-        skull.setLore(lore);
-        head.setItemMeta(skull);
-        head.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 10);
-
-        return head;
+    private boolean isMask(ItemStack item) {
+        return item != null &&  item.isSimilar(this.plugin.getRecipesManager().getMaskItem());
     }
-
-
-    public boolean isMask(ItemStack b) {
-        if(b != null && b.getType().equals(getMask().getType())) {
-            ItemMeta meta1 = b.getItemMeta();
-            ItemMeta meta2 = getMask().getItemMeta();
-            return meta1.getDisplayName().equalsIgnoreCase(meta2.getDisplayName()) && meta1.getLore().equals(meta2.getLore()) && meta1.getEnchants().equals(meta2.getEnchants());
-        }
-        return false;
-    }
-
-
 
 
     @EventHandler
     public void onPlace(BlockPlaceEvent event) {
         if(isMask(event.getItemInHand())) {
             event.setCancelled(true);
-            FileConfiguration config = plugin.getConfig();
-            event.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("config.prefix")+" "+config.getString("config.messages.cannot place")));
+            this.messageSender.send(event.getPlayer(), Message.CANNOT_PLACE);
         }
     }
 

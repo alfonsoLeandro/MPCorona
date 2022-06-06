@@ -44,6 +44,7 @@ public enum Message implements MessageEnum {
     FEELING_SYMPTOMS("&cYou are feeling %symptom% because of coronavirus"),
     YOU_SNEEZED("&cYou just sneezed! Bless you"),
     SNEEZED("&c%player% just sneezed"),
+    CANNOT_PLACE("&cHey, if i were you i would put that on my head instead of the floor"),
     ;
 
     private final String path;

@@ -39,15 +39,15 @@ public class InfectionManager extends Reloadable {
     }
 
 
-    public void infect(Player infected, CommandSender infecter){
+    public void infect(Player infected, String infecter, boolean infectedByPlayer){
         this.infectedPlayers.add(infected.getName());
 
-        if(infecter instanceof Player) {
-            this.playerInfections.put(infecter.getName(),
-                    this.playerInfections.getOrDefault(infecter.getName(), 1));
+        if(infectedByPlayer) {
+            this.playerInfections.put(infecter,
+                    this.playerInfections.getOrDefault(infecter, 1));
         }
         this.messageSender.broadcast(null, Message.JUST_INFECTED_SOMEONE,
-                "%infecter%", infecter.getName(),
+                "%infecter%", infecter,
                 "%infected%", infected.getName());
 
 
