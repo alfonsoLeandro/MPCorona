@@ -56,6 +56,7 @@ public class Settings extends Reloadable {
     public Settings(Corona plugin) {
         super(plugin);
         this.plugin = plugin;
+        loadFields();
     }
 
     private void loadFields() {
