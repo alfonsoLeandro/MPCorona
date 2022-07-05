@@ -45,6 +45,8 @@ public enum Message implements MessageEnum {
     YOU_SNEEZED("&cYou just sneezed! Bless you"),
     SNEEZED("&c%player% just sneezed"),
     CANNOT_PLACE("&cHey, if i were you i would put that on my head instead of the floor"),
+    SOMEONE_CURED_BY_POTION("&aA magic &5&lelixir &ahas cured &l%player% &afrom the virus!"),
+    CANNOT_USE_POTION("&cYou are not infected, give that potion to someone that needs it better!"),
     ;
 
     private final String path;

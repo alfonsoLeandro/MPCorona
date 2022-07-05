@@ -215,7 +215,7 @@ public final class Corona extends ReloaderPlugin {
         pm.registerEvents(new ItemCraft(this), this);
         pm.registerEvents(new PlaceEvent(this), this);
         pm.registerEvents(new JoinEvent(this), this);
-        pm.registerEvents(new CureByPotion(this, this.feelSymptoms), this);
+        pm.registerEvents(new CureByPotion(this), this);
     }
 
 

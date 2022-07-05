@@ -67,6 +67,14 @@ public class InfectionManager extends Reloadable {
                 "%cured%", toCure.getName());
     }
 
+    public void cureByPotion(Player toCure){
+        this.infectedPlayers.remove(toCure.getName());
+        this.playerInfections.remove(toCure.getName());
+
+        this.messageSender.broadcast(null, Message.SOMEONE_CURED_BY_POTION,
+                "%cured%", toCure.getName());
+    }
+
 
     private void loadInfectedPlayers(){
         FileConfiguration players = this.plugin.getPlayersYaml().getAccess();
