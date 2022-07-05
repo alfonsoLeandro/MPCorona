@@ -44,11 +44,11 @@ public class RandomSneezes extends Reloadable {
         this.time = this.settings.getSneezesIntervalTicks();
         this.mode = this.settings.getRandomSneezesMode();
         this.radiusSquared = this.settings.getSneezesRadiusSquared();
-        if(this.settings.isRandomSneezesEnabled()) randomSneezes();
+        if(this.settings.isRandomSneezesEnabled()) start();
     }
 
 
-    public void randomSneezes() {
+    public void start() {
         this.runnable = new BukkitRunnable() {
 
             @Override
@@ -118,7 +118,11 @@ public class RandomSneezes extends Reloadable {
         this.mode = this.settings.getRandomSneezesMode();
         this.radiusSquared = this.settings.getSneezesRadiusSquared();
         cancel();
-        if(this.settings.isRandomSneezesEnabled()) randomSneezes();
+        if(this.settings.isRandomSneezesEnabled()){
+            start();
+        }else{
+            this.messageSender.send("&cRandom sneezes is disabled, to enable it enable it in your config.yml and reload the plugin");
+        }
 
     }
 }

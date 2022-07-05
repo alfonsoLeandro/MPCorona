@@ -22,11 +22,6 @@ public class ReloadHandler extends AbstractHandler{
             return;
         }
         this.plugin.reload(false);
-        //  TODO
-//        feelSymptoms.cancel();
-//        feelSymptoms.start();
-        plugin.cancelRandomSneezes();
-        plugin.arrancarRandomSneezes();
         this.messageSender.send(sender, Message.RELOADED);
     }
 }

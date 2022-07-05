@@ -30,13 +30,15 @@ public final class Corona extends ReloaderPlugin {
 
     private final String version = getDescription().getVersion();
     private String latestVersion;
+    //Managers
     private MessageSender<Message> messageSender;
     private Settings settings;
     private InfectionManager infectionManager;
     private RecipesManager recipesManager;
-    private FeelSymptoms feelSymptoms;
+    //Configuration files
     private YamlFile configYaml;
     private YamlFile playersYaml;
+    //3rd party plugin hooks
     private Economy economy;
     private PAPI papiExpansion;
 
@@ -58,12 +60,10 @@ public final class Corona extends ReloaderPlugin {
         }else {
             this.messageSender.send("&cPlugin VAULT not found, disabling economy");
         }
-        this.feelSymptoms = new FeelSymptoms(this);
-        this.feelSymptoms.start();
+        new FeelSymptoms(this).start();
+        new RandomSneezes(this);
         registerEvents();
         registerCommands();
-        firstRun();
-        arrancarRandomSneezes();
         registerPAPIExpansion();
         updateChecker();
     }
@@ -80,8 +80,11 @@ public final class Corona extends ReloaderPlugin {
     }
 
 
-
-    public boolean setupEconomy() {
+    /**
+     * Prepares the economy to be used by this plugin.
+     * @return true if the economy is correctly setup. False otherwise.
+     */
+    private boolean setupEconomy() {
         if(!getServer().getPluginManager().isPluginEnabled("Vault")) {
             return false;
         }
@@ -93,12 +96,11 @@ public final class Corona extends ReloaderPlugin {
         return true;
     }
 
-    public Economy getEconomy() {
-        return this.economy;
-    }
 
-
-    public void registerPAPIExpansion(){
+    /**
+     * Registers the PlaceholderAPI expansion.
+     */
+    private void registerPAPIExpansion(){
         if(Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")){
             this.messageSender.send("&aPlaceholderAPI found, the placeholder has been registered successfully");
             this.papiExpansion = new PAPI(this);
@@ -108,16 +110,18 @@ public final class Corona extends ReloaderPlugin {
         }
     }
 
-    public void unRegisterPAPIExpansion(){
+    /**
+     * Unregisters the PlaceholderAPI expansion
+     */
+    private void unRegisterPAPIExpansion(){
         if(this.papiExpansion != null) this.papiExpansion.unregister();
     }
 
 
-
-    //
-    //updates
-    //
-    public void updateChecker(){
+    /**
+     * Checks for new versions in spigot.
+     */
+    private void updateChecker(){
         try {
             HttpURLConnection con = (HttpURLConnection) new URL(
                     "https://api.spigotmc.org/legacy/update.php?resource=77694").openConnection();
@@ -134,36 +138,6 @@ public final class Corona extends ReloaderPlugin {
         } catch (Exception ex) {
             this.messageSender.send("Error while checking updates.");
         }
-    }
-
-
-    //
-    //getversion
-    //
-    public String getVersion() {
-        return this.version;
-    }
-    public String getLatestVersion() {
-        return this.latestVersion;
-    }
-
-
-    RandomSneezes random;
-
-    public void firstRun(){
-        this.random = new RandomSneezes(this);
-    }
-
-    public void arrancarRandomSneezes() {
-        if(getConfig().getBoolean("config.infected.random sneezes.enabled")) {
-            this.random.randomSneezes();
-        }else {
-            this.messageSender.send("&cRandom sneezes is disabled, to enable it enable it in your config.yml and reload the plugin");
-        }
-    }
-
-    public void cancelRandomSneezes(){
-        this.random.cancel();
     }
 
     /**
@@ -209,7 +183,7 @@ public final class Corona extends ReloaderPlugin {
     /**
      * Registers MPCorona's events.
      */
-    public void registerEvents() {
+    private void registerEvents() {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new DamageEvent(this), this);
         pm.registerEvents(new ItemCraft(this), this);
@@ -222,7 +196,7 @@ public final class Corona extends ReloaderPlugin {
     /**
      * Register MPCorona's commands.
      */
-    public void registerCommands() {
+    private void registerCommands() {
         PluginCommand mainCommand = getCommand("corona");
 
         if(mainCommand == null){
@@ -235,12 +209,20 @@ public final class Corona extends ReloaderPlugin {
         mainCommand.setTabCompleter(new MainCommandTabCompleter());
     }
 
+    /**
+     * Registers the files needed for this plugin, associates the physical files
+     * with variables in this plugin and creates those physical files if they don't already
+     * exist.
+     */
     private void registerFiles(){
         this.configYaml = new YamlFile(this, "config.yml");
         this.playersYaml = new YamlFile(this, "players.yml");
     }
 
-    public void reloadFiles(){
+    /**
+     * Reloads the file for this plugin.
+     */
+    private void reloadFiles(){
         this.configYaml.loadFileConfiguration();
         this.playersYaml.loadFileConfiguration();
     }
@@ -250,6 +232,27 @@ public final class Corona extends ReloaderPlugin {
         reloadFiles();
         this.settings.reload(false);
         super.reload(deep);
+    }
+
+
+    /**
+     * Gets the plugin's current version.
+     * @return The current version as a string.
+     */
+    public String getVersion() {
+        return this.version;
+    }
+
+    /**
+     * Gets the plugin's latest version available in spigot.
+     * @return The plugin's latest version available for download.
+     */
+    public String getLatestVersion() {
+        return this.latestVersion;
+    }
+
+    public Economy getEconomy() {
+        return this.economy;
     }
 
     public MessageSender<Message> getMessageSender() {
